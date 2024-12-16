@@ -714,6 +714,17 @@
 			</td>
 			<td>$TOOLTIP_Alignment_SearchFieldY</td>
 		</tr>
+		
+		<tr class="expert" unused_id="Alignment_SearchMaxAngle_ex8">
+			<td class="indent1">
+				<class id="Alignment_SearchMaxAngle_text" style="color:black;">Search Max Angle</class>
+			</td>
+			<td>
+				<input required type="number" name="name" id="Alignment_SearchMaxAngle_value1" size="13" min="1" max="180"
+					oninput="(!validity.rangeUnderflow||(value=1)) && (!validity.rangeUnderflow||(value=180)) && (!validity.stepMismatch||(value=parseInt(this.value)));">°
+			</td>
+			<td>$TOOLTIP_Alignment_SearchMaxAngle</td>
+		</tr>
 
 		<tr class="expert" unused_id="Alignment_AlignmentAlgo_ex8">
 			<td class="indent1">
@@ -994,7 +1005,22 @@
 			</td>
 			<td>$TOOLTIP_PostProcessing_NUMBER.ExtendedResolution</td>
 		</tr>
-
+		
+		<!-------------
+		<tr>
+			<td class="indent2">
+				<label><class id="PostProcessing_AlignmentFailsValue_text" style="color:black;">Use Value even if alignment fails</class></label>
+			</td>
+			<td>
+				<select id="PostProcessing_AlignmentFailsValue_value1">
+					<option value="true" selected>enable (true)</option>
+					<option value="false">disable (false)</option>
+				</select>
+			</td>
+			<td>$TOOLTIP_PostProcessing_NUMBER.AlignmentFailsValue</td>
+		</tr>
+		------------------>
+		
 		<tr>
 			<td class="indent2">
 				<label><class id="PostProcessing_IgnoreLeadingNaN_text" style="color:black;">Ignore Leading NaNs</class></label>
@@ -2237,6 +2263,7 @@ function UpdateInputIndividual(sel) {
         ReadParameter(param, "PostProcessing", "MaxRateValue", true, NUNBERSAkt);
         ReadParameter(param, "PostProcessing", "MaxRateType", true, NUNBERSAkt);
         ReadParameter(param, "PostProcessing", "ExtendedResolution", false, NUNBERSAkt);
+        // ReadParameter(param, "PostProcessing", "AlignmentFailsValue", false, NUNBERSAkt);
         ReadParameter(param, "PostProcessing", "IgnoreLeadingNaN", false, NUNBERSAkt);
         // ReadParameter(param, "PostProcessing", "IgnoreAllNaN", false, NUNBERSAkt);
         ReadParameter(param, "PostProcessing", "AllowNegativeRates", false, NUNBERSAkt);
@@ -2256,6 +2283,7 @@ function UpdateInputIndividual(sel) {
     WriteParameter(param, category, "PostProcessing", "MaxRateValue", true, NUNBERSAkt);
     WriteParameter(param, category, "PostProcessing", "MaxRateType", true, NUNBERSAkt);
     WriteParameter(param, category, "PostProcessing", "ExtendedResolution", false, NUNBERSAkt);
+    // WriteParameter(param, category, "PostProcessing", "AlignmentFailsValue", false, NUNBERSAkt);
     WriteParameter(param, category, "PostProcessing", "IgnoreLeadingNaN", false, NUNBERSAkt);
     // WriteParameter(param, category, "PostProcessing", "IgnoreAllNaN", false, NUNBERSAkt);
     WriteParameter(param, category, "PostProcessing", "AllowNegativeRates", false, NUNBERSAkt);
@@ -2326,8 +2354,9 @@ function UpdateInput() {
     WriteParameter(param, category, "TakeImage", "Demo", false);
 	
     WriteParameter(param, category, "Alignment", "SearchFieldX", false);		
-    WriteParameter(param, category, "Alignment", "SearchFieldY", false);		
-    WriteParameter(param, category, "Alignment", "AlignmentAlgo", true);			
+    WriteParameter(param, category, "Alignment", "SearchFieldY", false);
+    WriteParameter(param, category, "Alignment", "SearchMaxAngle", false);
+    WriteParameter(param, category, "Alignment", "AlignmentAlgo", true);
     WriteParameter(param, category, "Alignment", "InitialRotate", false);
 
     WriteParameter(param, category, "Digits", "CNNGoodThreshold", true);
@@ -2493,6 +2522,7 @@ function ReadParameterAll() {
 
     ReadParameter(param, "Alignment", "SearchFieldX", false);	
     ReadParameter(param, "Alignment", "SearchFieldY", false);
+    ReadParameter(param, "Alignment", "SearchMaxAngle", false);
     ReadParameter(param, "Alignment", "AlignmentAlgo", true);
     ReadParameter(param, "Alignment", "InitialRotate", false);
 

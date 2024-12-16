@@ -15,6 +15,7 @@ struct RefInfo {
     int found_y;
     int search_x;
     int search_y;
+    int search_max_angle;
     int fastalg_x = -1;
     int fastalg_y = -1;
     int fastalg_min = -256;
@@ -24,9 +25,6 @@ struct RefInfo {
     float fastalg_SAD_criteria = -1;
     int alignment_algo = 0;             // 0 = "Default" (nur R-Kanal), 1 = "HighAccuracy" (RGB-Kanal), 2 = "Fast" (1.x RGB, dann isSimilar)
 };
-
-
-
 
 class CFindTemplate : public CImageBasis
 {

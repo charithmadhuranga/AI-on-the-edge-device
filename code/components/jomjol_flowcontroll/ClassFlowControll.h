@@ -22,8 +22,7 @@
 #endif //ENABLE_WEBHOOK
 #include "ClassFlowCNNGeneral.h"
 
-class ClassFlowControll :
-    public ClassFlow
+class ClassFlowControll : public ClassFlow
 {
 protected:
 	std::vector<ClassFlow*> FlowControll;
@@ -35,14 +34,16 @@ protected:
 	ClassFlowTakeImage* flowtakeimage;
 	ClassFlow* CreateClassFlow(std::string _type);
 
-	bool AutoStart;
-	float AutoInterval;
 	void SetInitialParameter(void);	
 	std::string aktstatusWithTime;
 	std::string aktstatus;
 	int aktRunNr;
 
 public:
+	bool AutoStart;
+	float AutoInterval;
+
+	bool alignmentOk;
 	bool SetupModeActive;
 
 	void InitFlow(std::string config);
@@ -93,6 +94,3 @@ public:
 };
 
 #endif
-
-
-

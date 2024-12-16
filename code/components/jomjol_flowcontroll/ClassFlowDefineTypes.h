@@ -31,7 +31,6 @@ enum t_RateType {
     RateChange      // time difference is considered and a normalized rate is used for comparison with NumberPost.maxRate
  };
 
-
 /**
  * Holds all properties and settings of a sequence. A sequence is a set of digit and/or analog ROIs that are combined to 
  * provide one meter reading (value).
@@ -46,6 +45,7 @@ struct NumberPost {
     bool PreValueOkay;          // previousValueValid; indicates that the reading of the previous round has no errors
     bool AllowNegativeRates;    // allowNegativeRate; defines if the consistency checks allow negative rates between consecutive meter readings.
     bool checkDigitIncreaseConsistency; // extendedConsistencyCheck; performs an additional consistency check to avoid wrong readings
+    // bool AlignmentFailsValue;           // Use the value even if alignment fails
     time_t timeStampLastValue;     // Timestamp for the last read value; is used for the log
     time_t timeStampLastPreValue;  // Timestamp for the last PreValue set; is used for useMaxRateValue
     time_t timeStampTimeUTC;    // FIXME: not used; can be removed.
@@ -83,4 +83,3 @@ struct NumberPost {
 };
 
 #endif
-

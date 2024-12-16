@@ -56,8 +56,9 @@ ClassFlowAlignment::ClassFlowAlignment(std::vector<ClassFlow *> *lfc)
 bool ClassFlowAlignment::ReadParameter(FILE *pfile, string &aktparamgraph)
 {
     std::vector<string> splitted;
-    int suchex = 40;
-    int suchey = 40;
+    int suchex = 20;
+    int suchey = 20;
+    int maxangle = 45;
     int alg_algo = 0; // default=0; 1 =HIGHACCURACY; 2= FAST; 3= OFF //add disable aligment algo |01.2023
 
     aktparamgraph = trim(aktparamgraph);
@@ -95,6 +96,11 @@ bool ClassFlowAlignment::ReadParameter(FILE *pfile, string &aktparamgraph)
         else if ((toUpper(splitted[0]) == "SEARCHFIELDY") && (splitted.size() > 1)) {
             if (isStringNumeric(splitted[1])) {
                 suchey = std::stod(splitted[1]);
+            }
+        }
+        else if ((toUpper(splitted[0]) == "SEARCHMAXANGLE") && (splitted.size() > 1)) {
+            if (isStringNumeric(splitted[1])) {
+                maxangle = std::stod(splitted[1]);
             }
         }
         else if ((toUpper(splitted[0]) == "ANTIALIASING") && (splitted.size() > 1)) {
@@ -141,6 +147,7 @@ bool ClassFlowAlignment::ReadParameter(FILE *pfile, string &aktparamgraph)
     for (int i = 0; i < anz_ref; ++i) {
         References[i].search_x = suchex;
         References[i].search_y = suchey;
+        References[i].search_max_angle = maxangle;
         References[i].fastalg_SAD_criteria = SAD_criteria;
         References[i].alignment_algo = alg_algo;
 #ifdef DEBUG_DETAIL_ON
@@ -169,6 +176,14 @@ string ClassFlowAlignment::getHTMLSingleStep(string host)
 
 bool ClassFlowAlignment::doFlow(string time)
 {
+    // no align algo if set to 3 = off
+    if (References[0].alignment_algo == 3) {
+        flowctrl.alignmentOk = true;
+    }
+    else {
+        flowctrl.alignmentOk = false;
+    }
+
 #ifdef ALGROI_LOAD_FROM_MEM_AS_JPG
     // AlgROI needs to be allocated before ImageTMP to avoid heap fragmentation
     if (!AlgROI)  {
@@ -231,8 +246,16 @@ bool ClassFlowAlignment::doFlow(string time)
 
     // no align algo if set to 3 = off //add disable aligment algo |01.2023
     if (References[0].alignment_algo != 3) {
-        if (!AlignAndCutImage->Align(&References[0], &References[1])) {
+        int AlignRetval = AlignAndCutImage->Align(&References[0], &References[1]);
+        if (AlignRetval >= 0) {
             SaveReferenceAlignmentValues();
+            flowctrl.alignmentOk = true;
+        }
+        else if (AlignRetval == -1) {
+            // Alignment failed
+            flowctrl.alignmentOk = false;
+            LogFile.WriteToFile(ESP_LOG_ERROR, TAG, "Can't allocate Align -> Exec this round aborted!");
+            LogFile.WriteHeapInfo("ClassFlowAlignment-doFlow");
         }
     } // no align
 

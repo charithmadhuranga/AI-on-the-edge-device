@@ -1,13 +1,14 @@
-#include "ClassFlowPostProcessing.h"
-#include "Helper.h"
-#include "ClassFlowTakeImage.h"
-#include "ClassLogFile.h"
-
 #include <iomanip>
 #include <sstream>
 
 #include <time.h>
 
+#include "ClassFlowPostProcessing.h"
+#include "ClassFlowTakeImage.h"
+#include "ClassLogFile.h"
+#include "MainFlowControl.h"
+
+#include "Helper.h"
 #include "time_sntp.h"
 
 #include "esp_log.h"
@@ -484,6 +485,35 @@ void ClassFlowPostProcessing::handleMaxRateValue(string _decsep, string _value) 
     }
 }
 
+/*
+void ClassFlowPostProcessing::handleAlignmentFailsValue(string _decsep, string _value)
+{
+    string _digit, _decpos;
+    int _pospunkt = _decsep.find_first_of(".");
+    // ESP_LOGD(TAG, "Name: %s, Pospunkt: %d", _decsep.c_str(), _pospunkt);
+
+    if (_pospunkt > -1)
+    {
+        _digit = _decsep.substr(0, _pospunkt);
+    }
+    else
+    {
+        _digit = "default";
+    }
+
+    for (int j = 0; j < NUMBERS.size(); ++j)
+    {
+        bool _zwdc = alphanumericToBoolean(_value);
+
+        // Set to default first (if nothing else is set)
+        if ((_digit == "default") || (NUMBERS[j]->name == _digit))
+        {
+            NUMBERS[j]->AlignmentFailsValue = _zwdc;
+        }
+    }
+}
+*/
+
 void ClassFlowPostProcessing::handleChangeRateThreshold(string _decsep, string _value) {
     string _digit, _decpos;
     int _pospunkt = _decsep.find_first_of(".");
@@ -592,6 +622,13 @@ bool ClassFlowPostProcessing::ReadParameter(FILE* pfile, string& aktparamgraph) 
                 }
             }
         }
+		
+/*
+        if ((toUpper(_param) == "ALIGNMENTFAILSVALUE") && (splitted.size() > 1))
+        {
+            handleAlignmentFailsValue(splitted[0], splitted[1]);
+        }
+*/
 			
         if ((toUpper(_param) == "ALLOWNEGATIVERATES") && (splitted.size() > 1)) {
             handleAllowNegativeRate(splitted[0], splitted[1]);
@@ -677,8 +714,9 @@ void ClassFlowPostProcessing::InitNUMBERS() {
         _number->DecimalShift = 0;
         _number->DecimalShiftInitial = 0;
         _number->isExtendedResolution = false;
-        _number->AnalogToDigitTransitionStart=9.2;
+        _number->AnalogToDigitTransitionStart = 9.2;
         _number->ChangeRateThreshold = 2;
+        // _number->AlignmentFailsValue = true;
 
         _number->Value = 0; // last value read out, incl. corrections
         _number->ReturnValue = ""; // corrected return value, possibly with error message
@@ -777,6 +815,18 @@ bool ClassFlowPostProcessing::doFlow(string zwtime) {
         // calculate time difference
         // double LastValueTimeDifference = difftime(imagetime, NUMBERS[j]->timeStampLastValue);         // in seconds
         double LastPreValueTimeDifference = difftime(imagetime, NUMBERS[j]->timeStampLastPreValue);   // in seconds
+		
+        // if ((!flowctrl.alignmentOk) && (!NUMBERS[j]->AlignmentFailsValue)) {
+        if (!flowctrl.alignmentOk) {
+            NUMBERS[j]->ErrorMessageText = "Alignment failed";
+
+            NUMBERS[j]->timeStampLastValue = imagetime;
+
+            std::string _zw = NUMBERS[j]->name + ": Raw: " + NUMBERS[j]->ReturnRawValue + ", Value: " + NUMBERS[j]->ReturnValue + ", Status: " + NUMBERS[j]->ErrorMessageText;
+            LogFile.WriteToFile(ESP_LOG_ERROR, TAG, _zw);
+            WriteDataLog(j);
+            continue;
+        }
 
         UpdateNachkommaDecimalShift();
 

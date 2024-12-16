@@ -10,9 +10,7 @@
 
 #include <string>
 
-
-class ClassFlowPostProcessing :
-    public ClassFlow
+class ClassFlowPostProcessing : public ClassFlow
 {
 protected:
     bool UpdatePreValueINI;
@@ -41,9 +39,8 @@ protected:
     void handleMaxRateType(string _decsep, string _value);
     void handleAnalogToDigitTransitionStart(string _decsep, string _value);
     void handleAllowNegativeRate(string _decsep, string _value);
+    // void handleAlignmentFailsValue(string _decsep, string _value);
     void handleChangeRateThreshold(string _decsep, string _value);
-    
-    std::string GetStringReadouts(general);
 
     void WriteDataLog(int _index);
 
@@ -74,6 +71,5 @@ public:
 
     string name(){return "ClassFlowPostProcessing";};
 };
-
 
 #endif //CLASSFFLOWPOSTPROCESSING_H

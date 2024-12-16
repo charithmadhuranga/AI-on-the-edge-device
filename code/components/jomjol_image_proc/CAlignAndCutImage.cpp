@@ -33,71 +33,99 @@ void CAlignAndCutImage::GetRefSize(int *ref_dx, int *ref_dy)
     ref_dy[1] = t1_dy;
 }
 
-bool CAlignAndCutImage::Align(RefInfo *_temp1, RefInfo *_temp2)
+int CAlignAndCutImage::Align(RefInfo *_temp1, RefInfo *_temp2)
 {
-    int dx, dy;
-    int r0_x, r0_y, r1_x, r1_y;
-    bool isSimilar1, isSimilar2;
+    CFindTemplate *ft = new CFindTemplate("align", rgb_image, channels, width, height, bpp);
 
-    CFindTemplate* ft = new CFindTemplate("align", rgb_image, channels, width, height, bpp);
+    //////////////////////////////////////////////
+    int r1_x = _temp1->target_x;
+    int r1_y = _temp1->target_y;
 
-    r0_x = _temp1->target_x;
-    r0_y = _temp1->target_y;
     ESP_LOGD(TAG, "Before ft->FindTemplate(_temp1); %s", _temp1->image_file.c_str());
-    isSimilar1 = ft->FindTemplate(_temp1);
-    _temp1->width = ft->tpl_width;
-    _temp1->height = ft->tpl_height; 
+    bool isSimilar1 = ft->FindTemplate(_temp1);
 
-    r1_x = _temp2->target_x;
-    r1_y = _temp2->target_y;
+    _temp1->width = ft->tpl_width;
+    _temp1->height = ft->tpl_height;
+
+    int dx1 = _temp1->target_x - _temp1->found_x;
+    int dy1 = _temp1->target_y - _temp1->found_y;
+
+    r1_x += dx1;
+    r1_y += dy1;
+
+    //////////////////////////////////////////////
+    int r2_x = _temp2->target_x;
+    int r2_y = _temp2->target_y;
+
     ESP_LOGD(TAG, "Before ft->FindTemplate(_temp2); %s", _temp2->image_file.c_str());
-    isSimilar2 = ft->FindTemplate(_temp2);
+    bool isSimilar2 = ft->FindTemplate(_temp2);
+
     _temp2->width = ft->tpl_width;
-    _temp2->height = ft->tpl_height; 
+    _temp2->height = ft->tpl_height;
+
+    int dx2 = _temp2->target_x - _temp2->found_x;
+    int dy2 = _temp2->target_y - _temp2->found_y;
+
+    r2_x += dx1;
+    r2_y += dy1;
 
     delete ft;
 
+    //////////////////////////////////////////////
+    float angle_org = atan2(_temp2->found_y - _temp1->found_y, _temp2->found_x - _temp1->found_x);
+    float angle_cur = atan2(r2_y - r1_y, r2_x - r1_x);
 
-    dx = _temp1->target_x - _temp1->found_x;
-    dy = _temp1->target_y - _temp1->found_y;
+    float angle_dif = (angle_cur - angle_org) * 180 / M_PI;
 
-    r0_x += dx;
-    r0_y += dy;
-
-    r1_x += dx;
-    r1_y += dy;
-
-    float w_org, w_ist, d_winkel;
-
-    w_org = atan2(_temp2->found_y - _temp1->found_y, _temp2->found_x - _temp1->found_x);
-    w_ist = atan2(r1_y - r0_y, r1_x - r0_x);
-
-    d_winkel = (w_ist - w_org) * 180 / M_PI;
-
-/*#ifdef DEBUG_DETAIL_ON
-    std::string zw = "\tdx:\t" + std::to_string(dx) + "\tdy:\t" + std::to_string(dy) + "\td_winkel:\t" + std::to_string(d_winkel);
-    zw = zw + "\tt1_x_y:\t" + std::to_string(_temp1->found_x) + "\t" + std::to_string(_temp1->found_y);
-    zw = zw + "\tpara1_found_min_avg_max_SAD:\t" + std::to_string(_temp1->fastalg_min) + "\t" + std::to_string(_temp1->fastalg_avg) + "\t" + std::to_string(_temp1->fastalg_max) + "\t"+ std::to_string(_temp1->fastalg_SAD);
-    zw = zw + "\tt2_x_y:\t" + std::to_string(_temp2->found_x) + "\t" + std::to_string(_temp2->found_y);
-    zw = zw + "\tpara2_found_min_avg_max:\t" + std::to_string(_temp2->fastalg_min) + "\t" + std::to_string(_temp2->fastalg_avg) + "\t" + std::to_string(_temp2->fastalg_max) + "\t"+ std::to_string(_temp2->fastalg_SAD);
-    LogFile.WriteToDedicatedFile("/sdcard/alignment.txt", zw);
-#endif*/
+    if ((fabs(angle_dif) > (_temp1->search_max_angle || _temp2->search_max_angle)) || (abs(dx1) >= _temp1->search_x) || (abs(dy1) >= _temp1->search_y) || (abs(dx2) >= _temp2->search_x) || (abs(dy2) >= _temp2->search_y))
+    {
+        ESP_LOGD(TAG, "Alignment failed: dx1 %d - dy1 %d - dx2 %d - dy2 %d - rot %f", dx1, dy1, dx2, dy2, angle_dif);
+        return -1; // ALIGNMENT FAILED
+    }
 
     CRotateImage rt("Align", this, ImageTMP);
-    rt.Translate(dx, dy);
-    rt.Rotate(d_winkel, _temp1->target_x, _temp1->target_y);
-    ESP_LOGD(TAG, "Alignment: dx %d - dy %d - rot %f", dx, dy, d_winkel);
 
-    return (isSimilar1 && isSimilar2);
+    if ((dx1 > 0 && dx2 > 0 && dy1 > 0 && dy2 > 0) || (dx1 < 0 && dx2 < 0 && dy1 < 0 && dy2 < 0))
+    {
+        // only move linaer because no rotative motion obviuos
+        ESP_LOGD(TAG, "Align: Correction by linear dx + dy only");
+        rt.Translate(dx1, dy1);
+    }
+    else if ((dx1 > 0 && dx2 > 0) || (dx1 < 0 && dx2 < 0))
+    {
+        // only rotate + move x direction
+        ESP_LOGD(TAG, "Align: Correction by rotation + linear dx");
+        rt.Rotate(angle_dif, width / 2, height / 2);
+        rt.Translate(dx1 / 2, 0); // correct only by half because some correction already happen with rotation
+    }
+    else if ((dy1 > 0 && dy2 > 0) || (dy1 < 0 && dy2 < 0))
+    {
+        // only rotate + move y direction
+        ESP_LOGD(TAG, "Align: Correction by rotation + linear dy");
+        rt.Rotate(angle_dif, width / 2, height / 2);
+        rt.Translate(0, dy1 / 2); // correct only by half because some correction already happen with rotation
+    }
+    else
+    {
+        // only rotate because no obviuos linear motion detected
+        ESP_LOGD(TAG, "Align: Correction by rotation only");
+        rt.Rotate(angle_dif, width / 2, height / 2);
+    }
+
+    ESP_LOGD(TAG, "Alignment: dx1 %d - dy1 %d - dx2 %d - dy2 %d - rot %f", dx1, dy1, dx2, dy2, angle_dif);
+
+    if (isSimilar1 && isSimilar2)
+    {
+        return 1; // ALGO FAST match
+    }
+    else
+    {
+        return 0; // ALGO STANDARD done
+    }
 }
-
-
-
-
 
 void CAlignAndCutImage::CutAndSave(std::string _template1, int x1, int y1, int dx, int dy)
 {
-
     int x2, y2;
 
     x2 = x1 + dx;
@@ -117,13 +145,17 @@ void CAlignAndCutImage::CutAndSave(std::string _template1, int x1, int y1, int d
     RGBImageLock();
 
     for (int x = x1; x < x2; ++x)
+    {
         for (int y = y1; y < y2; ++y)
         {
             p_target = odata + (channels * ((y - y1) * dx + (x - x1)));
             p_source = rgb_image + (channels * (y * width + x));
             for (int _channels = 0; _channels < channels; ++_channels)
+            {
                 p_target[_channels] = p_source[_channels];
+            }
         }
+    }
 
 #ifdef STBI_ONLY_JPEG
     stbi_write_jpg(_template1.c_str(), dx, dy, channels, odata, 100);
@@ -162,18 +194,21 @@ void CAlignAndCutImage::CutAndSave(int x1, int y1, int dx, int dy, CImageBasis *
     stbi_uc* p_source;
 
     for (int x = x1; x < x2; ++x)
+    {
         for (int y = y1; y < y2; ++y)
         {
             p_target = odata + (channels * ((y - y1) * dx + (x - x1)));
             p_source = rgb_image + (channels * (y * width + x));
             for (int _channels = 0; _channels < channels; ++_channels)
+            {
                 p_target[_channels] = p_source[_channels];
+            }
         }
+    }
 
     RGBImageRelease();
     _target->RGBImageRelease();
 }
-
 
 CImageBasis* CAlignAndCutImage::CutAndSave(int x1, int y1, int dx, int dy)
 {
@@ -196,13 +231,17 @@ CImageBasis* CAlignAndCutImage::CutAndSave(int x1, int y1, int dx, int dy)
     RGBImageLock();
 
     for (int x = x1; x < x2; ++x)
+    {
         for (int y = y1; y < y2; ++y)
         {
             p_target = odata + (channels * ((y - y1) * dx + (x - x1)));
             p_source = rgb_image + (channels * (y * width + x));
             for (int _channels = 0; _channels < channels; ++_channels)
+            {
                 p_target[_channels] = p_source[_channels];
+            }
         }
+    }
 
     CImageBasis* rs = new CImageBasis("CutAndSave", odata, channels, dx, dy, bpp);
     RGBImageRelease();

@@ -146,6 +146,7 @@ function ParseConfig() {
     ParamAddValue(param, catname, "InitialRotate");
     ParamAddValue(param, catname, "SearchFieldX");
     ParamAddValue(param, catname, "SearchFieldY");
+    ParamAddValue(param, catname, "SearchMaxAngle");
     ParamAddValue(param, catname, "AlignmentAlgo");
 
     var catname = "Digits";
@@ -182,6 +183,7 @@ function ParseConfig() {
     ParamAddValue(param, catname, "MaxRateValue", 1, true, "0.05");
     ParamAddValue(param, catname, "MaxRateType", 1, true);
     ParamAddValue(param, catname, "ExtendedResolution", 1, true, "false");
+    // ParamAddValue(param, catname, "AlignmentFailsValue", 1, true, "true");
     ParamAddValue(param, catname, "IgnoreLeadingNaN", 1, true, "false");
     // ParamAddValue(param, catname, "IgnoreAllNaN", 1, true, "false");
     ParamAddValue(param, catname, "ErrorMessage");

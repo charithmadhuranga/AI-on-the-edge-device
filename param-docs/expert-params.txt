@@ -27,6 +27,7 @@ CamZoomOffsetY
 demo
 SearchFieldX
 SearchFieldY
+SearchMaxAngle
 AlignmentAlgo
 CNNGoodThreshold
 PreValueAgeStartup
